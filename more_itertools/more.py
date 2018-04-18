@@ -23,7 +23,7 @@ except ImportError:
     from collections import Sequence
 
 from six import binary_type, string_types, text_type
-from six.moves import filter, map, range, zip, zip_longest
+from six.moves import filter, map, range, zip, zip_longest, reduce
 
 from .recipes import consume, flatten, take
 
@@ -63,6 +63,7 @@ __all__ = [
     'rstrip',
     'run_length',
     'seekable',
+    'pipelineable',
     'SequenceView',
     'side_effect',
     'sliced',
@@ -1869,6 +1870,28 @@ class seekable(object):
         remainder = index - len(self._cache)
         if remainder > 0:
             consume(self, remainder)
+
+
+class pipelineable(object):
+    def __init__(self, iterable):
+        self._source = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._source)
+
+    next = __next__
+
+    def map(self, func):
+        return pipelineable(map(func, self))
+
+    def filter(self, func=None):
+        return pipelineable(filter(func, self))
+
+    def reduce(self, func, initializer=None):
+        return reduce(func, self, initializer)
 
 
 class run_length(object):
